@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Tree test</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            margin: auto;
+            padding-top: 50px;
+            position: relative;
+            width: 1000px;
+        }
+        
+        #tooltip {
+            position: absolute;
+            width: 200px;
+            height: auto;
+            padding: 10px;
+            background-color: white;
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 10px;
+            -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+        
+        #tooltip.hidden {
+            display: none;
+        }
+        
+        #tooltip p {
+            margin: 0;
+            font-family: sans-serif;
+            font-size: 16px;
+            padding-bottom: 0px;
+            margin: 3px;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="tooltip" class="hidden">
+        <p>
+            <strong id="title">Challenge title</strong>
+        </p>
+        <p style="font-size: 14px" id="topic">Challenge topic</p>
+        <p style="font-size: 11px" class="smallText" id="description">Description</p>
+
+    </div>
+
+    <script>
+        var w = 600;
+        var h = 300;
+
+        var challenges = [];
+        challenges.push({
+            title: "Arrays of objects",
+            challengeType: "Backbone",
+            topic: "Objects and Classes",
+            time: "10 minutes",
+            difficulty: 1,
+            description: "Fill an array with objects to easily make lots of instances of a class.",
+            tags: ["array", "object", "class", "ball"],
+            id: 0,
+            prerequisites: [],
+        });
+        challenges.push({
+            title: "Recursive tree",
+            challengeType: "Optional",
+            topic: "Functions and Recursion",
+            time: "30 minutes",
+            difficulty: 1,
+            description: "Use a recursive function to generate a natural looking tree.",
+            tags: ["function", "recursion", "tree", "simulation"],
+            id: 1,
+            prerequisites: [0],
+
+        });
+        challenges.push({
+            title: "Flocking",
+            challengeType: "OpenEnded",
+            topic: "Vectors and Simulation",
+            time: "40 minutes",
+            difficulty: 1,
+            description: "Create a flocking simulation similar to a school of fish or flock of birds using vectors.",
+            tags: ["object", "agents", "emergence", "flocking", "vector", "simulation"],
+            id: 2,
+            prerequisites: [0, 1],
+
+        });
+
+
+        var dataset = {
+            "nodes": [],
+            "edges": []
+        };
+
+        for (let challenge of challenges) {
+            //let challenge = JSON.parse(JSON.stringify(challenges[j])); //for json parsing
+            dataset.nodes.push(challenge);
+            for (let pre of challange.prerequisites) {
+                dataset.edges.push({
+                    source: pre.id,
+                    target: challenge.id
+                });
+            }
+        }
+
+        console.log(dataset);
+
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+
+        // build the arrow.
+        svg.append("svg:defs").selectAll("marker")
+            .data(["end"]) // Different link/path types can be defined here
+            .enter().append("svg:marker") // This section adds in the arrows
+            .attr("id", String)
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 15)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("svg:path")
+            .attr("d", "M0,-5L10,0L0,5");
+
+        var force = d3.forceSimulation(dataset.nodes)
+            .force("charge", d3.forceManyBody().strength(-6))
+            .force("link", d3.forceLink(dataset.edges))
+            .force("center", d3.forceCenter().x(w / 2).y(h / 2));
+
+
+        var edges = svg.selectAll("line")
+            .data(dataset.edges)
+            .enter()
+            .append("line")
+            .style("stroke", "#222")
+            .style("stroke-width", 1)
+            .attr("marker-end", "url(#end)");
+
+        var nodes = svg.selectAll("circle")
+            .data(dataset.nodes)
+            .enter()
+            .append("circle")
+            .attr("r", 4)
+            .style("fill", function(d, i) {
+                if (d.challengeType == "Backbone") {
+                    return "black";
+                } else if (d.challengeType == "OpenEnded") {
+                    return "red";
+                } else if (d.challengeType == "Optional") {
+                    return "blue";
+                } else {
+                    return "green";
+                }
+            });
+
+        force.on("tick", function() {
+
+            edges.attr("x1", function(d) {
+                    return d.source.x;
+                })
+                .attr("y1", function(d) {
+                    return d.source.y;
+                })
+                .attr("x2", function(d) {
+                    return d.target.x;
+                })
+                .attr("y2", function(d) {
+                    return d.target.y;
+                });
+
+            nodes.attr("cx", function(d) {
+                    return d.x;
+                })
+                .attr("cy", function(d) {
+                    return d.y;
+                });
+
+        });
+        nodes.on("click", function(d) {
+            window.location.href = "http://www.alexeltonpym.com";
+
+        });
+
+        nodes.on("mouseover", function(d) { //event when we mouseover
+
+                //get tooltip location
+                var xPosition = parseFloat(d3.select(this).attr("cx"));
+                var yPosition = parseFloat(d3.select(this).attr("cy"));
+
+                //update tooltip location and value
+                d3.select("#tooltip")
+                    .style("left", xPosition + "px")
+                    .style("top", yPosition + "px");
+                d3.select("#title")
+                    .text(d.title);
+                d3.select("#topic")
+                    .text(d.topic);
+                d3.select("#time")
+                    .text(d.time);
+                d3.select("#description")
+                    .text(d.description);
+                //use hidden css to hide and show the tooltip
+                d3.select("#tooltip").classed("hidden", false);
+            })
+            .on("mouseout", function(d) { //reset fill on mouse out
+                //hide tooltip
+                d3.select("#tooltip").classed("hidden", true);
+            });
+    </script>
+</body>
+
+</html>
